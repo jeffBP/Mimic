@@ -1,0 +1,6 @@
+﻿C:\Program Files (x86)\Microsoft Visual Studio\2017\Community\Common7\IDE\VC\VCTargets\Microsoft.CppBuild.targets(387,5): warning MSB8028: The intermediate directory (Debug\) contains files shared from another project (Project1.vcxproj).  This can lead to incorrect clean and rebuild behavior.
+  Source.cpp
+  SerialPort.cpp
+  RunSerial.cpp
+  Generating Code...
+Debug\RunSerial.obj : fatal error LNK1112: module machine type 'x86' conflicts with target machine type 'x64'
