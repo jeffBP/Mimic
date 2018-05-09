@@ -13,7 +13,8 @@
 
 #include "RunSerial.cpp"
 #include "SerialPort.h"
-
+#include <iostream>
+#include <fstream>
 using namespace std;
 
 #include <iostream>
@@ -41,18 +42,12 @@ vector<double> kinectElbow = { 0, 0, 0, 0, 0, 0, 0, 0, 0, 0 };
 double shoulderAngle = 0;
 double elbowAngle = 0;
 
+
+
 int lastAvg = 0;
 
 char *port_name = "\\\\.\\COM4";
 SerialPort arduino(port_name);
-
-void reinitVectors() {
-	
-	kinectShoulder = { 0, 0, 0, 0, 0, 0, 0, 0, 0, 0 };
-	kinectElbow = { 0, 0, 0, 0, 0, 0, 0, 0, 0, 0 };
-
-	vIndex = 0;
-}
 
 bool initKinect() {
 	
@@ -145,8 +140,9 @@ void processSkeletalData() {
 	Vector4 rElb = skeletonPosition[NUI_SKELETON_POSITION_ELBOW_RIGHT];
 	Vector4 rShoul = skeletonPosition[NUI_SKELETON_POSITION_SHOULDER_RIGHT];
 
-	shoulderAngle = atan2(rElb.x, rElb.y) * 180 / PI;
-	elbowAngle = -(atan2(rHand.x - rElb.x,rHand.y - rElb.y) *180 / PI - shoulderAngle);
+	shoulderAngle = (atan2(-(rElb.y - rShoul.y),  (rElb.x - rShoul.x)) * 180 / PI) + 90;
+	elbowAngle = (atan2(rHand.y - rElb.y,rHand.x - rElb.x) *180 / PI);
+	elbowAngle = elbowAngle + shoulderAngle - 90;
 
 	cout << shoulderAngle << ", " << elbowAngle << "\n";
 	/*
@@ -176,46 +172,110 @@ void processSkeletalData() {
 	*/
 	
 }
-
-
-void main() {
-	initKinect();
-	//This code snippet will help you to read data from arduino
-
-	/*Portname must contain these backslashes, and remember to
-	replace the following com port*/
-
-	//String for incoming data
+void sendDataToArduino(double ang1, double ang2) {
 	char incomingData[MAX_DATA_LENGTH] = "";
-
 	char output[MAX_DATA_LENGTH] = "";
 
+	if (ang1 != 90 && ang2 != 0) {
+		std::string input_string;
+		//Getting input
+		input_string = "" + to_string(int(ang1)) + ", " + to_string(int(ang2));
+		//Creating a c string
+		char *c_string = new char[10];
+		//copying the std::string to c string
+		cout << input_string << "\n";
+		std::copy(input_string.begin(), input_string.end(), c_string);
+		//Adding the delimiter
+		cout << input_string.size() + 1 << "\n";
+		//c_string[input_string.size()] = '\n';
+		/*
+		//Writing string to arduino
+		for (int i = 0; i < input_string.size(); i++) {
+		char* c = reinterpret_cast<char*>(input_string[i]);
+		cout << c << "\n";
+		arduino.writeSerialPort(c, 1);
+		}
+		*/
+		arduino.writeSerialPort(c_string, input_string.size() + 1);
+		//Getting reply from arduino
+		Sleep(35);
+		arduino.readSerialPort(output, MAX_DATA_LENGTH);
+		cout << output << "\n";
+
+		//freeing c_string memory
+		delete[] c_string;
+
+	}
+}
+void readDataToArduino(string angles) {
+	char incomingData[MAX_DATA_LENGTH] = "";
+	char output[MAX_DATA_LENGTH] = "";
+	
+		std::string input_string;
+		//Getting input
+		input_string = angles;
+		//Creating a c string
+		char *c_string = new char[10];
+		//copying the std::string to c string
+		cout << input_string << "\n";
+		std::copy(input_string.begin(), input_string.end(), c_string);
+		//Adding the delimiter
+		cout << input_string.size() + 1 << "\n";
+		//c_string[input_string.size()] = '\n';
+		arduino.writeSerialPort(c_string, input_string.size() + 1);
+		//Getting reply from arduino
+		arduino.readSerialPort(output, MAX_DATA_LENGTH);
+		cout << output << "\n";
+
+		//freeing c_string memory
+		delete[] c_string;
+
+	
+}
+void saveData(string name, double ang1, double ang2) {
+	ofstream file(name, std::ios::app);
+	if (ang1 != 90 && ang2 != 0) {
+		file << to_string(int(ang1)) << ", " << to_string(int(ang2))<< "\n";
+	}
+	file.close();
+
+}
+
+void main() {
+	initKinect();	
+
+		//This code snippet will help you to read data from arduino
+
+		/*Portname must contain these backslashes, and remember to
+		replace the following com port*/
+		
+	//String for incoming data
+	
+	
 		if (arduino.isConnected()) cout << "Connection Established" << endl;
 		else cout << "ERROR, check port name";
-
+		/*
 		while (arduino.isConnected()) {
 			getSkeletalData();
 			processSkeletalData();
-			if (shoulderAngle != 0 && elbowAngle != 0) {
-				std::string input_string;
-				//Getting input
-				input_string = "" + to_string(shoulderAngle) + ", " + to_string(elbowAngle);
-				//Creating a c string
-				char *c_string = new char[input_string.size() + 1];
-				//copying the std::string to c string
-				std::copy(input_string.begin(), input_string.end(), c_string);
-				//Adding the delimiter
-				c_string[input_string.size()] = '\n';
-				//Writing string to arduino
-				arduino.writeSerialPort(c_string, input_string.size() + 1);
-				//Getting reply from arduino
+			//saveData("wave.txt", shoulderAngle, elbowAngle);
+			//sendDataToArduino(shoulderAngle, elbowAngle);
+			
+		
+		}
+		*/
+		while (arduino.isConnected() != true) {}
+
+		string str;
+		ifstream angles("wave.txt");
+		if (angles.is_open()) {
+			while (getline(angles, str)) {
+				readDataToArduino(str);
 				Sleep(35);
-				arduino.readSerialPort(output, MAX_DATA_LENGTH);
-				//printing the output
-				puts(output);
-				//freeing c_string memory
-				delete[] c_string;
 			}
 		}
+		angles.close();
+		system("pause");
+		
 }
 
