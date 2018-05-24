@@ -1,0 +1,4 @@
+﻿  Source.cpp
+c:\users\jeffp\source\repos\mimic\source.cpp(200): warning C4267: 'argument': conversion from 'size_t' to 'unsigned int', possible loss of data
+c:\users\jeffp\source\repos\mimic\source.cpp(226): warning C4267: 'argument': conversion from 'size_t' to 'unsigned int', possible loss of data
+  Mimic.vcxproj -> C:\Users\jeffp\source\repos\Mimic\x64\Debug\Mimic.exe
